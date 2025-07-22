@@ -1,0 +1,10 @@
+# Common GitHub Pages exclusions
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
+
+# Development files
+*.log
+.vscode/
+.idea/ 
