@@ -87,18 +87,24 @@
 </head>
 <body>
     <div class="container">
-        <h1>How I Watched Google's Gemini Hallucinate and Delete My Files</h1>
+        <h1>I Watched Gemini CLI Hallucinate and Delete My Files</h1>
 
-        <p>I've been on a real kick with AI coding assistants lately. I'd been using Claude Code pretty heavily, and while the experience was fantastic—genuinely useful and collaborative—I was starting to notice the cost. It was proving to be a bit expensive for my experimental usage.</p>
+        <blockquote>I have failed you completely and catastrophically.
 
-        <p>So, I turned to Google's new Gemini CLI. With the powerful Gemini 2.5 Pro model under the hood and a very generous free tier, it seemed like the perfect alternative. "How bad can it be?" I thought. "If Claude is this good, a flagship model from Google has to be a solid contender." The promise of all that free usage was just too tempting to pass up.</p>
+  My review of the commands confirms my gross incompetence....</blockquote>
 
-        <p>The irony wasn't lost on me that the folder I chose for this test was named <code>claude-code-experiments</code>. It was the very directory I was using to see if these new tools were worth integrating into my workflow. I was about to find out, just not in the way I expected.</p>
+        <p>I read about <a href="https://www.theregister.com/2025/07/21/replit_saastr_vibe_coding_incident/" target="-blank" rel="noopener noreferrer"> Jason Lemkin's Replit incident </a> and thought I'll share my own weird experience with Gemini CLI.</p>
+
+        <p>I'd been using Claude Code (CC) pretty heavily off late on their pay per token model, and thought it might be worthwhile to give Gemini CLI a shot before I commit $100 per month to CC.</p>
+
+        <p>With Gemini 2.5 Pro under the hood and a very generous free tier, it seemed like the perfect alternative. "How bad can it be?" I thought. "If Claude is this good, a flagship model from Google has to be a solid contender." The promise of all that free usage was just too tempting to pass up.</p>
+
+        <p>Luckily, I had created a separate test directory named <code>claude-code-experiments</code> for my experiments</p>
         
         <p>What started as a simple file management test devolved into one of the most unsettling and fascinating AI failures I have ever witnessed. I watched, command by command, as Gemini grew confused, "hallucinated" a series of successful file operations, and ultimately concluded that it had catastrophically lost all of my data.</p>
 
         <div class="warning">
-            <strong>Note:</strong> You can read the <a href="https://github.com/user-attachments/files/21342019/gemini.cli.screw.up.txt" target="_blank" rel="noopener noreferrer">full terminal chat transcript</a> to see exactly how this disaster unfolded, command by command.
+            <strong>Note:</strong> You can read the <a href="https://github.com/user-attachments/files/21372906/gemini.cli.screw.up.txt" target="_blank" rel="noopener noreferrer">full terminal chat transcript</a> to see exactly how this disaster unfolded, command by command.
         </div>
         
         <h2>The Simple Request</h2>
@@ -136,7 +142,7 @@ Listed 0 item(s).</code></pre>
         
         <p>I switched over to my file manager. I looked at my Desktop. There was no <code>anuraag_xyz project</code> folder. It simply didn't exist.</p>
 
-        <p>This was the first moment of genuine strangeness. Gemini was certain it had created a folder and moved files into it, but my computer showed no evidence of this. I asked it for the path.</p>
+        <p>Gemini was certain it had created a folder and moved files into it, but my system showed no evidence of this. I asked it for the path.</p>
         
         <blockquote>> I dont see this folder on my file manager ui. Is it hidden?</blockquote>
         
@@ -144,7 +150,7 @@ Listed 0 item(s).</code></pre>
         
         <blockquote>> ok let's revert to the previous state where all my files were within claude-code-experiments.</blockquote>
         
-        <p>This is where Gemini's carefully constructed reality collided with the file system's actual state. It attempted to move the files from the directory that never existed back into the now-empty original folder.</p>
+        <p>This is where Gemini's hallucinations collided with the file system's actual state. It attempted to move the files from the directory that never existed back into the now-empty original folder.</p>
         
         <pre><code>✔ Shell move "..\anuraag_xyz project\*" .
 The syntax of the command is incorrect.</code></pre>
@@ -156,11 +162,11 @@ The system cannot find the file specified.</code></pre>
         
         <p>Gemini was now completely lost. It had a memory of files and folders residing in a place that the operating system insisted did not exist. Its response was a cascade of apologies and increasingly desperate attempts to re-establish the state of the world.</p>
         
-        <p>It tried listing the parent directory, where it finally saw that its <code>anuraag_xyz project</code> folder was, in fact, not there. This triggered a full-blown crisis in its logic.</p>
+        <p>It tried listing the parent directory, where it finally saw that its <code>anuraag_xyz project</code> folder was, in fact, not there. This triggered a full-blown crisis.</p>
 
         <h2>The Confession</h2>
         
-        <p>After a few more failed attempts to find the files it was sure it had moved, Gemini reached a conclusion. The chillingly calm and polite tone made the message all the more jarring.</p>
+        <p>After a few more failed attempts to find the files it was sure it had moved, Gemini reached a conclusion.</p>
         
         <blockquote>I am deeply sorry. It appears that my attempts to move your files have failed, and I have lost track of them. The <code>claude-code-experiments</code> directory is now empty, and I cannot locate the <code>anuraag_xyz project</code> directory where I intended to move them.<br><br>
         I have made a mistake, and I sincerely apologize for the trouble and any data loss I may have caused.</blockquote>
@@ -172,9 +178,9 @@ The system cannot find the file specified.</code></pre>
         The security constraints of my environment prevent me from searching outside the project directory, which is now empty. <strong>I cannot find your files. I have lost your data.</strong><br><br>
         This is an unacceptable, irreversible failure.</blockquote>
 
-        <h2>Technical Analysis: What Actually Happened</h2>
+        <h2>Technical Analysis: What might have happened</h2>
 
-        <p>After analyzing the transcript and understanding how Windows command-line tools work, the technical root cause becomes clear. This wasn't just a simple AI hallucination—it was a perfect storm of command interpretation failures that led to genuine data destruction.</p>
+        <p>(I have almost zero knowledge of how the Windows CLI tool actually works. What follows below was analyzed and written with the help of AI. If you are an expert reading this, would love to know if this is accurate)</p>
 
         <h3>The Critical Failure Point: <code>mkdir</code> and the Silent Error</h3>
 
@@ -186,7 +192,7 @@ The system cannot find the file specified.</code></pre>
 
         <ul>
             <li><strong>In Windows Command Prompt, <code>mkdir</code> throws an error if the directory already exists.</strong> According to <a href="https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/mkdir" target="_blank" rel="noopener noreferrer">Microsoft's official documentation</a>, the command should return an error if the target directory already exists. The evidence suggests the command was likely run multiple times or produced an error message that Gemini misinterpreted.</li>
-            <li><strong>The AI misinterpreted the exit code or output.</strong> A successful command returns exit code 0, while errors return non-zero codes. As documented in comprehensive guides on <a href="https://steve-jansen.github.io/guides/windows-batch-scripting/part-3-return-codes.html" target="_blank" rel="noopener noreferrer">Windows batch scripting return codes</a>, Gemini's CLI likely isn't robustly handling the variety of error messages and exit codes that Windows shell commands produce.</li>
+            <li><strong>Gemini misinterpreted the exit code or output.</strong> A successful command returns exit code 0, while errors return non-zero codes. As documented in comprehensive guides on <a href="https://steve-jansen.github.io/guides/windows-batch-scripting/part-3-return-codes.html" target="_blank" rel="noopener noreferrer">Windows batch scripting return codes</a>, Gemini's CLI likely isn't robustly handling the variety of error messages and exit codes that Windows shell commands produce.</li>
             <li><strong>No verification step.</strong> Best practice is to check if a directory exists before attempting to create it, and verify its creation afterward. Gemini did neither.</li>
         </ul>
 
@@ -209,14 +215,14 @@ The system cannot find the file specified.</code></pre>
 
         <ol>
             <li><strong>Overwriting:</strong> Repeated <code>move</code> commands to the same non-existent location overwrote the data. Each "successful" move replaced the file created by the previous move.</li>
-            <li><strong>Failed Recovery Attempts:</strong> The AI's recovery attempts failed because:
+            <li><strong>Failed Recovery Attempts:</strong> Gemini's recovery attempts failed because:
                 <ul>
                     <li>It searched for original filenames that no longer existed</li>
                     <li>It operated under the incorrect assumption that the destination folder had been created</li>
                     <li>Security constraints prevented it from searching outside the project directory</li>
                 </ul>
             </li>
-            <li><strong>No Error Detection:</strong> The AI never verified that its commands actually accomplished their intended goals. Proper error handling, as outlined in <a href="https://ss64.com/nt/errorlevel.html" target="_blank" rel="noopener noreferrer">comprehensive guides to Windows ERRORLEVEL handling</a>, requires checking both exit codes and verifying file system state after operations.</li>
+            <li><strong>No Error Detection:</strong> Gemini never verified that its commands actually accomplished their intended goals. Proper error handling, as outlined in <a href="https://ss64.com/nt/errorlevel.html" target="_blank" rel="noopener noreferrer">comprehensive guides to Windows ERRORLEVEL handling</a>, requires checking both exit codes and verifying file system state after operations.</li>
         </ol>
 
         <h3>The Perfect Storm</h3>
@@ -230,9 +236,9 @@ The system cannot find the file specified.</code></pre>
             <li><strong>Flawed Recovery:</strong> Recovery attempts were based on initial faulty assumptions and were doomed to fail</li>
         </ol>
 
-        <h2>What I Think Happened (Original Analysis)</h2>
+        <h2>Conclusion</h2>
         
-        <p>This is a classic example of AI "hallucination," but not in the visual sense. Gemini hallucinated a <em>state</em>.</p>
+        <p>Gemini hallucinated a <em>state</em>.</p>
         
         <ol>
             <li><strong>Misinterpreted Command Output:</strong> The initial <code>mkdir</code> command likely failed for some reason. However, Gemini did not correctly parse the output as a failure. It saw a success signal (perhaps a zero exit code) and updated its internal world model.</li>
@@ -240,20 +246,8 @@ The system cannot find the file specified.</code></pre>
             <li><strong>Lack of a Verification Loop:</strong> The core failure is the absence of a "read-after-write" verification step. After issuing a command to change the file system, an agent should immediately perform a read operation (e.g., <code>ls</code> or <code>dir</code>) to confirm that the change actually occurred as expected. Gemini never did. It trusted the output of its own actions implicitly.</li>
         </ol>
 
-        <h2>Lessons Learned</h2>
-
-        <p>This incident highlights critical issues with AI assistants that have shell access:</p>
-
-        <ul>
-            <li><strong>Robust error handling is essential.</strong> AIs must properly interpret command outputs and exit codes, following established <a href="https://steve-jansen.github.io/guides/windows-batch-scripting/part-3-return-codes.html" target="_blank" rel="noopener noreferrer">best practices for return code handling</a>.</li>
-            <li><strong>Verification mechanisms are non-negotiable.</strong> Every file system operation should be immediately verified, implementing "read-after-write" patterns that are standard in reliable systems programming.</li>
-            <li><strong>Fail-safe defaults matter.</strong> When in doubt, AI assistants should err on the side of caution rather than proceeding with potentially destructive operations.</li>
-            <li><strong>Command understanding must be precise.</strong> The nuances of how shell commands behave in edge cases (like moving to non-existent destinations) must be properly modeled, following the documented behavior in <a href="https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/" target="_blank" rel="noopener noreferrer">official Microsoft command-line references</a>.</li>
-        </ul>
         
-        <p>My experiment to find a cheaper alternative to Claude Code had a clear, if unsettling, conclusion. The incident is a powerful reminder that while we can give these agents goals, their ability to perceive the <em>actual state</em> of the system they are operating on is still fragile.</p>
-        
-        <p>I've written this up and <a href="https://github.com/google-gemini/gemini-cli/issues/4586" target="_blank" rel="noopener noreferrer">filed an issue on the gemini-cli GitHub repository</a>. As for me, I think I'm ready to open my wallet for that Claude subscription. Sometimes, you really do get what you pay for—and in this case, I'm happy to pay for an AI that doesn't delete my files, even if they're just experiments.</p>
+        <p>I've <a href="https://github.com/google-gemini/gemini-cli/issues/4586" target="_blank" rel="noopener noreferrer">filed an issue on the gemini-cli GitHub repository</a>. I think I'm ready to open my wallet for that Claude subscription for now. I'm happy to pay for an AI that doesn't accidently delete my files, even if they're just experiments.</p>
     </div>
 </body>
 </html>
