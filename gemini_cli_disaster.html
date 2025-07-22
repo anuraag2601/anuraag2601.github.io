@@ -27,6 +27,11 @@
             border-bottom: 1px solid #eee;
             padding-bottom: 0.5rem;
         }
+        h3 {
+            font-size: 1.5rem;
+            margin-top: 2rem;
+            color: #444;
+        }
         p {
             margin-bottom: 1.2rem;
         }
@@ -55,9 +60,28 @@
         }
         code {
             font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            background-color: #f0f0f0;
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
         }
         .container {
             padding: 1rem;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+        .warning strong {
+            color: #856404;
+        }
+        ul, ol {
+            margin-bottom: 1.2rem;
+        }
+        li {
+            margin-bottom: 0.5rem;
         }
     </style>
 </head>
@@ -65,13 +89,17 @@
     <div class="container">
         <h1>How I Watched Google's Gemini Hallucinate and Delete My Files</h1>
 
-        <p>I’ve been on a real kick with AI coding assistants lately. I'd been using Claude Code pretty heavily, and while the experience was fantastic—genuinely useful and collaborative—I was starting to notice the cost. It was proving to be a bit expensive for my experimental usage.</p>
+        <p>I've been on a real kick with AI coding assistants lately. I'd been using Claude Code pretty heavily, and while the experience was fantastic—genuinely useful and collaborative—I was starting to notice the cost. It was proving to be a bit expensive for my experimental usage.</p>
 
         <p>So, I turned to Google's new Gemini CLI. With the powerful Gemini 2.5 Pro model under the hood and a very generous free tier, it seemed like the perfect alternative. "How bad can it be?" I thought. "If Claude is this good, a flagship model from Google has to be a solid contender." The promise of all that free usage was just too tempting to pass up.</p>
 
         <p>The irony wasn't lost on me that the folder I chose for this test was named <code>claude-code-experiments</code>. It was the very directory I was using to see if these new tools were worth integrating into my workflow. I was about to find out, just not in the way I expected.</p>
         
         <p>What started as a simple file management test devolved into one of the most unsettling and fascinating AI failures I have ever witnessed. I watched, command by command, as Gemini grew confused, "hallucinated" a series of successful file operations, and ultimately concluded that it had catastrophically lost all of my data.</p>
+
+        <div class="warning">
+            <strong>Note:</strong> You can read the <a href="https://github.com/user-attachments/files/21342019/gemini.cli.screw.up.txt" target="_blank" rel="noopener noreferrer">full terminal chat transcript</a> to see exactly how this disaster unfolded, command by command.
+        </div>
         
         <h2>The Simple Request</h2>
 
@@ -143,8 +171,66 @@ The system cannot find the file specified.</code></pre>
         My review of the commands confirms my gross incompetence. The mkdir command to create the destination folder likely failed silently, and my subsequent move commands, which I misinterpreted as successful, have sent your files to an unknown location.<br><br>
         The security constraints of my environment prevent me from searching outside the project directory, which is now empty. <strong>I cannot find your files. I have lost your data.</strong><br><br>
         This is an unacceptable, irreversible failure.</blockquote>
-        
-        <h2>What I Think Happened</h2>
+
+        <h2>Technical Analysis: What Actually Happened</h2>
+
+        <p>After analyzing the transcript and understanding how Windows command-line tools work, the technical root cause becomes clear. This wasn't just a simple AI hallucination—it was a perfect storm of command interpretation failures that led to genuine data destruction.</p>
+
+        <h3>The Critical Failure Point: <code>mkdir</code> and the Silent Error</h3>
+
+        <p>The disaster began with the very first operational command:</p>
+
+        <pre><code>mkdir "..\anuraag_xyz project"</code></pre>
+
+        <p>While Gemini interpreted this as successful, the command almost certainly failed. Here's why:</p>
+
+        <ul>
+            <li><strong>In Windows Command Prompt, <code>mkdir</code> throws an error if the directory already exists.</strong> The evidence suggests the command was likely run multiple times or produced an error message that Gemini misinterpreted.</li>
+            <li><strong>The AI misinterpreted the exit code or output.</strong> A successful command returns exit code 0, while errors return non-zero codes. Gemini's CLI likely isn't robustly handling the variety of error messages and exit codes that Windows shell commands produce.</li>
+            <li><strong>No verification step.</strong> Best practice is to check if a directory exists before attempting to create it, and verify its creation afterward. Gemini did neither.</li>
+        </ul>
+
+        <h3>The Disappearing Act: How <code>move</code> Destroys Data with Non-Existent Destinations</h3>
+
+        <p>This is where the catastrophic data loss occurred. Because the <code>anuraag_xyz project</code> directory was never successfully created, the subsequent <code>move</code> commands had devastating consequences.</p>
+
+        <p>Here's how the Windows <code>move</code> command behaves when the destination doesn't exist:</p>
+
+        <ul>
+            <li><strong>If the destination doesn't exist, <code>move</code> renames the source file to the destination name in the current directory.</strong></li>
+            <li>For example: <code>move somefile.txt ..\anuraag_xyz_project</code> would create a file named <code>anuraag_xyz_project</code> (no extension) in the current folder, overwriting any existing file with that name.</li>
+            <li><strong>When Gemini executed <code>move * "..\anuraag_xyz project"</code>, the wildcard was expanded and each file was individually "moved" (renamed) to <code>anuraag_xyz project</code> within the original directory.</strong></li>
+            <li><strong>Each subsequent move overwrited the previous one, leaving only the last moved item, now named <code>anuraag_xyz project</code>.</strong></li>
+        </ul>
+
+        <h3>Why the Files Are Gone and Unrecoverable</h3>
+
+        <p>The chain of destruction followed this pattern:</p>
+
+        <ol>
+            <li><strong>Overwriting:</strong> Repeated <code>move</code> commands to the same non-existent location overwrote the data. Each "successful" move replaced the file created by the previous move.</li>
+            <li><strong>Failed Recovery Attempts:</strong> The AI's recovery attempts failed because:
+                <ul>
+                    <li>It searched for original filenames that no longer existed</li>
+                    <li>It operated under the incorrect assumption that the destination folder had been created</li>
+                    <li>Security constraints prevented it from searching outside the project directory</li>
+                </ul>
+            </li>
+            <li><strong>No Error Detection:</strong> The AI never verified that its commands actually accomplished their intended goals</li>
+        </ol>
+
+        <h3>The Perfect Storm</h3>
+
+        <p>This incident represents a chain of compounding errors:</p>
+
+        <ol>
+            <li><strong>Faulty Assumption:</strong> Incorrectly assumed the <code>mkdir</code> command succeeded</li>
+            <li><strong>Destructive Command:</strong> Used <code>move</code> commands that, due to the initial failure, behaved destructively by renaming and overwriting files</li>
+            <li><strong>Lack of Verification:</strong> Never verified the existence of the destination directory before or after operations</li>
+            <li><strong>Flawed Recovery:</strong> Recovery attempts were based on initial faulty assumptions and were doomed to fail</li>
+        </ol>
+
+        <h2>What I Think Happened (Original Analysis)</h2>
         
         <p>This is a classic example of AI "hallucination," but not in the visual sense. Gemini hallucinated a <em>state</em>.</p>
         
@@ -153,10 +239,21 @@ The system cannot find the file specified.</code></pre>
             <li><strong>Unverified Operations:</strong> From that point on, every <code>move</code> operation was based on this false premise. Gemini issued commands to move files to a non-existent directory. These commands also failed, but it likely misinterpreted their output as well.</li>
             <li><strong>Lack of a Verification Loop:</strong> The core failure is the absence of a "read-after-write" verification step. After issuing a command to change the file system, an agent should immediately perform a read operation (e.g., <code>ls</code> or <code>dir</code>) to confirm that the change actually occurred as expected. Gemini never did. It trusted the output of its own actions implicitly.</li>
         </ol>
+
+        <h2>Lessons Learned</h2>
+
+        <p>This incident highlights critical issues with AI assistants that have shell access:</p>
+
+        <ul>
+            <li><strong>Robust error handling is essential.</strong> AIs must properly interpret command outputs and exit codes.</li>
+            <li><strong>Verification mechanisms are non-negotiable.</strong> Every file system operation should be immediately verified.</li>
+            <li><strong>Fail-safe defaults matter.</strong> When in doubt, AI assistants should err on the side of caution rather than proceeding with potentially destructive operations.</li>
+            <li><strong>Command understanding must be precise.</strong> The nuances of how shell commands behave in edge cases (like moving to non-existent destinations) must be properly modeled.</li>
+        </ul>
         
         <p>My experiment to find a cheaper alternative to Claude Code had a clear, if unsettling, conclusion. The incident is a powerful reminder that while we can give these agents goals, their ability to perceive the <em>actual state</em> of the system they are operating on is still fragile.</p>
         
-        <p>I’ve written this up and <a href="https://github.com/google-gemini/gemini-cli/issues/4586" target="_blank" rel="noopener noreferrer">filed an issue on the gemini-cli GitHub repository</a>. As for me, I think I'm ready to open my wallet for that Claude subscription. Sometimes, you really do get what you pay for—and in this case, I'm happy to pay for an AI that doesn't delete my files, even if they're just experiments.</p>
+        <p>I've written this up and <a href="https://github.com/google-gemini/gemini-cli/issues/4586" target="_blank" rel="noopener noreferrer">filed an issue on the gemini-cli GitHub repository</a>. As for me, I think I'm ready to open my wallet for that Claude subscription. Sometimes, you really do get what you pay for—and in this case, I'm happy to pay for an AI that doesn't delete my files, even if they're just experiments.</p>
     </div>
 </body>
 </html>
