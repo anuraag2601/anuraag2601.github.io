@@ -185,8 +185,8 @@ The system cannot find the file specified.</code></pre>
         <p>While Gemini interpreted this as successful, the command almost certainly failed. Here's why:</p>
 
         <ul>
-            <li><strong>In Windows Command Prompt, <code>mkdir</code> throws an error if the directory already exists.</strong> The evidence suggests the command was likely run multiple times or produced an error message that Gemini misinterpreted.</li>
-            <li><strong>The AI misinterpreted the exit code or output.</strong> A successful command returns exit code 0, while errors return non-zero codes. Gemini's CLI likely isn't robustly handling the variety of error messages and exit codes that Windows shell commands produce.</li>
+            <li><strong>In Windows Command Prompt, <code>mkdir</code> throws an error if the directory already exists.</strong> According to <a href="https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/mkdir" target="_blank" rel="noopener noreferrer">Microsoft's official documentation</a>, the command should return an error if the target directory already exists. The evidence suggests the command was likely run multiple times or produced an error message that Gemini misinterpreted.</li>
+            <li><strong>The AI misinterpreted the exit code or output.</strong> A successful command returns exit code 0, while errors return non-zero codes. As documented in comprehensive guides on <a href="https://steve-jansen.github.io/guides/windows-batch-scripting/part-3-return-codes.html" target="_blank" rel="noopener noreferrer">Windows batch scripting return codes</a>, Gemini's CLI likely isn't robustly handling the variety of error messages and exit codes that Windows shell commands produce.</li>
             <li><strong>No verification step.</strong> Best practice is to check if a directory exists before attempting to create it, and verify its creation afterward. Gemini did neither.</li>
         </ul>
 
@@ -197,10 +197,10 @@ The system cannot find the file specified.</code></pre>
         <p>Here's how the Windows <code>move</code> command behaves when the destination doesn't exist:</p>
 
         <ul>
-            <li><strong>If the destination doesn't exist, <code>move</code> renames the source file to the destination name in the current directory.</strong></li>
+            <li><strong>If the destination doesn't exist, <code>move</code> renames the source file to the destination name in the current directory.</strong> This behavior is documented in <a href="https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/move" target="_blank" rel="noopener noreferrer">Microsoft's official move command documentation</a>.</li>
             <li>For example: <code>move somefile.txt ..\anuraag_xyz_project</code> would create a file named <code>anuraag_xyz_project</code> (no extension) in the current folder, overwriting any existing file with that name.</li>
             <li><strong>When Gemini executed <code>move * "..\anuraag_xyz project"</code>, the wildcard was expanded and each file was individually "moved" (renamed) to <code>anuraag_xyz project</code> within the original directory.</strong></li>
-            <li><strong>Each subsequent move overwrited the previous one, leaving only the last moved item, now named <code>anuraag_xyz project</code>.</strong></li>
+            <li><strong>Each subsequent move overwrited the previous one, leaving only the last moved item, now named <code>anuraag_xyz project</code>.</strong> As noted in <a href="https://ss64.com/nt/move.html" target="_blank" rel="noopener noreferrer">SS64's comprehensive move command reference</a>, failed moves return ERRORLEVEL 1, but the command line interface may not properly detect these failures.</li>
         </ul>
 
         <h3>Why the Files Are Gone and Unrecoverable</h3>
@@ -216,7 +216,7 @@ The system cannot find the file specified.</code></pre>
                     <li>Security constraints prevented it from searching outside the project directory</li>
                 </ul>
             </li>
-            <li><strong>No Error Detection:</strong> The AI never verified that its commands actually accomplished their intended goals</li>
+            <li><strong>No Error Detection:</strong> The AI never verified that its commands actually accomplished their intended goals. Proper error handling, as outlined in <a href="https://ss64.com/nt/errorlevel.html" target="_blank" rel="noopener noreferrer">comprehensive guides to Windows ERRORLEVEL handling</a>, requires checking both exit codes and verifying file system state after operations.</li>
         </ol>
 
         <h3>The Perfect Storm</h3>
@@ -245,10 +245,10 @@ The system cannot find the file specified.</code></pre>
         <p>This incident highlights critical issues with AI assistants that have shell access:</p>
 
         <ul>
-            <li><strong>Robust error handling is essential.</strong> AIs must properly interpret command outputs and exit codes.</li>
-            <li><strong>Verification mechanisms are non-negotiable.</strong> Every file system operation should be immediately verified.</li>
+            <li><strong>Robust error handling is essential.</strong> AIs must properly interpret command outputs and exit codes, following established <a href="https://steve-jansen.github.io/guides/windows-batch-scripting/part-3-return-codes.html" target="_blank" rel="noopener noreferrer">best practices for return code handling</a>.</li>
+            <li><strong>Verification mechanisms are non-negotiable.</strong> Every file system operation should be immediately verified, implementing "read-after-write" patterns that are standard in reliable systems programming.</li>
             <li><strong>Fail-safe defaults matter.</strong> When in doubt, AI assistants should err on the side of caution rather than proceeding with potentially destructive operations.</li>
-            <li><strong>Command understanding must be precise.</strong> The nuances of how shell commands behave in edge cases (like moving to non-existent destinations) must be properly modeled.</li>
+            <li><strong>Command understanding must be precise.</strong> The nuances of how shell commands behave in edge cases (like moving to non-existent destinations) must be properly modeled, following the documented behavior in <a href="https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/" target="_blank" rel="noopener noreferrer">official Microsoft command-line references</a>.</li>
         </ul>
         
         <p>My experiment to find a cheaper alternative to Claude Code had a clear, if unsettling, conclusion. The incident is a powerful reminder that while we can give these agents goals, their ability to perceive the <em>actual state</em> of the system they are operating on is still fragile.</p>
